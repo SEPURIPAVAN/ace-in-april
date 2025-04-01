@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Question } from '@/types';
@@ -7,23 +6,34 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/utils';
-import { FileText } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 
 interface DailyQuestionProps {
   category: 'dsa' | 'project';
 }
 
+interface QuestionError {
+  type: 'fetch' | 'network' | 'server';
+  message: string;
+}
+
 const DailyQuestion: React.FC<DailyQuestionProps> = ({ category }) => {
   const [question, setQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<QuestionError | null>(null);
   const { toast } = useToast();
   
-  // Get current date formatted as YYYY-MM-DD
-  const today = new Date().toISOString().split('T')[0];
+  // Memoize today's date to prevent unnecessary re-renders
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchTodaysQuestion = async () => {
       try {
+        setLoading(true);
+        setError(null);
+
         const { data, error } = await supabase
           .from('questions')
           .select('*')
@@ -32,33 +42,69 @@ const DailyQuestion: React.FC<DailyQuestionProps> = ({ category }) => {
           .single();
 
         if (error) {
-          console.error('Error fetching question:', error);
-          toast({
-            title: 'Error fetching today\'s question',
-            description: error.message,
-            variant: 'destructive',
-          });
-          return;
+          throw new Error(error.message);
         }
 
-        setQuestion(data);
+        if (isMounted) {
+          setQuestion(data);
+        }
       } catch (error) {
-        console.error('Unexpected error:', error);
+        console.error('Error fetching question:', error);
+        if (isMounted) {
+          if (error instanceof Error) {
+            if (error.message.includes('network')) {
+              setError({
+                type: 'network',
+                message: 'Network connection error. Please check your internet connection.'
+              });
+            } else {
+              setError({
+                type: 'fetch',
+                message: 'Failed to fetch today\'s question. Please try again later.'
+              });
+            }
+          } else {
+            setError({
+              type: 'server',
+              message: 'An unexpected error occurred. Please try again later.'
+            });
+          }
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchTodaysQuestion();
-  }, [category, today, toast]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [category, today]);
 
   if (loading) {
     return (
       <Card className="w-full">
         <CardContent className="pt-6">
           <div className="h-24 flex items-center justify-center">
-            <p>Loading today's challenge...</p>
+            <Loader2 className="h-6 w-6 animate-spin" />
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Error Loading Challenge</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-destructive">{error.message}</p>
+          <p className="mt-2 text-muted-foreground">Please try refreshing the page or contact support if the issue persists.</p>
         </CardContent>
       </Card>
     );

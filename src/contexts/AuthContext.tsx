@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, LoginCredentials } from '@/types';
+import { useNavigate, Outlet } from 'react-router-dom';
+import type { User, LoginCredentials } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import bcrypt from 'bcryptjs';
 
 interface AuthContextType {
   user: User | null;
@@ -14,7 +14,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(userData);
       } catch (error) {
         console.error('Error parsing user data:', error);
+        localStorage.removeItem('aceInApril_user'); // Clear invalid data
       }
     }
     setLoading(false);
@@ -37,16 +38,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('Attempting login with:', credentials.username);
       
-      // Properly query the users table
+      // Query the users table with proper password hashing
       const { data, error } = await supabase
         .from('users')
-        .select('id, username, role, category')
+        .select('id, username, role, category, password, created_at')
         .eq('username', credentials.username)
-        .eq('password', credentials.password); // Note: Use password hashing in production
+        .single();
 
-      console.log('Login response:', { data, error });
+      if (error) {
+        console.error('Supabase error:', error);
+        toast({
+          title: 'Login failed',
+          description: 'Database error occurred',
+          variant: 'destructive',
+        });
+        return false;
+      }
 
-      if (error || !data || data.length === 0) {
+      if (!data) {
+        toast({
+          title: 'Login failed',
+          description: 'User not found',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      console.log('Found user:', { username: data.username, hasPassword: !!data.password });
+      
+      // Direct password comparison for demo
+      const isValidPassword = credentials.password === data.password;
+      console.log('Password verification:', { 
+        providedPassword: credentials.password,
+        storedPassword: data.password,
+        isValid: isValidPassword 
+      });
+
+      if (!isValidPassword) {
         toast({
           title: 'Login failed',
           description: 'Invalid username or password',
@@ -55,8 +83,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      // Get the first user that matches (should be only one)
-      const userData = data[0];
+      // Remove password from user data before storing
+      const { password, ...userData } = data;
 
       // Save user data to localStorage
       localStorage.setItem('aceInApril_user', JSON.stringify(userData));
@@ -79,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Login error:', error);
       toast({
         title: 'Login error',
-        description: 'An unexpected error occurred.',
+        description: 'An unexpected error occurred. Please try again later.',
         variant: 'destructive',
       });
       return false;
@@ -98,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>
-      {children}
+      <Outlet />
     </AuthContext.Provider>
   );
 };

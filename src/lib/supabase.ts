@@ -1,81 +1,18 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-// These values would typically come from environment variables
-// For now, we'll use placeholders that users will replace with their own values
-const supabaseUrl = 'https://bkmjjkqggdfxjrbgngiq.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrbWpqa3FnZ2RmeGpyYmduZ2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0OTc0NDUsImV4cCI6MjA1OTA3MzQ0NX0.8dn287JLzR9NePvuWkEREzKv3255DS6iIsTKVnNp2wA';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Create a proper mock client with chainable methods to prevent TypeScript errors
-const createMockClient = () => {
-  // Mock response for all database operations
-  const mockResponse = {
-    data: null,
-    error: { message: 'Supabase configuration error' }
-  };
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
-  // Create a chainable object that always returns itself for method calls
-  const createChainable = () => {
-    const chainable: any = {};
-    const methods = [
-      'select', 'insert', 'update', 'delete', 'eq', 'order', 'single', 'lte', 'gte', 'lt', 'gt',
-      'neq', 'like', 'ilike', 'is', 'in', 'contains', 'containedBy', 'range', 'overlaps',
-      'textSearch', 'filter', 'match', 'not'
-    ];
-
-    methods.forEach(method => {
-      chainable[method] = () => chainable;
-    });
-
-    // Final methods that end the chain should return the mock response
-    chainable.then = () => Promise.resolve(mockResponse);
-    chainable.single = () => mockResponse;
-
-    return chainable;
-  };
-
-  return {
-    from: () => createChainable(),
-    storage: {
-      from: () => ({
-        upload: () => Promise.resolve(mockResponse),
-        getPublicUrl: () => ({ data: { publicUrl: '' } }),
-      }),
-    },
-    functions: {
-      setAuth: () => {},
-    },
-  };
-};
-
-// Initialize the Supabase client with URL validation
-const createSupabaseClient = () => {
-  try {
-    // Validate the URL before creating the client
-    new URL(supabaseUrl);
-    
-    // Create and configure the Supabase client
-    const client = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-      }
-    });
-    
-    // Debug log to verify connection
-    console.log('Supabase client initialized with URL:', supabaseUrl);
-    
-    return client;
-  } catch (error) {
-    console.error('Invalid Supabase URL:', error);
-    // Return a mock client that doesn't make actual API calls
-    // This prevents runtime errors while allowing the app to load
-    return createMockClient();
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
   }
-};
-
-// Initialize the Supabase client
-export const supabase = createSupabaseClient();
+});
 
 // Helper function to get the current user from localStorage
 export const getCurrentUser = () => {
@@ -89,7 +26,6 @@ export const getCurrentUser = () => {
     return null;
   }
 };
-
 // Add custom header with user ID for RLS policies
 export const addUserToRequest = () => {
   const user = getCurrentUser();
@@ -100,3 +36,4 @@ export const addUserToRequest = () => {
 
 // Call this function to set up the custom header
 addUserToRequest();
+
