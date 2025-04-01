@@ -37,17 +37,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('Attempting login with:', credentials.username);
       
-      // Query the users table directly
+      // First, let's get all users matching the username
       const { data, error } = await supabase
         .from('users')
         .select('id, username, role, category')
         .eq('username', credentials.username)
-        .eq('password', credentials.password) // Note: Use password hashing in production
-        .single();
+        .eq('password', credentials.password); // Note: Use password hashing in production
 
       console.log('Login response:', { data, error });
 
-      if (error || !data) {
+      if (error || !data || data.length === 0) {
         toast({
           title: 'Login failed',
           description: 'Invalid username or password',
@@ -56,17 +55,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      // Get the first user that matches (should be only one)
+      const userData = data[0];
+
       // Save user data to localStorage
-      localStorage.setItem('aceInApril_user', JSON.stringify(data));
-      setUser(data);
+      localStorage.setItem('aceInApril_user', JSON.stringify(userData));
+      setUser(userData);
 
       toast({
         title: 'Login successful',
-        description: `Welcome back, ${data.username}!`,
+        description: `Welcome back, ${userData.username}!`,
       });
 
       // Redirect based on role
-      if (data.role === 'admin') {
+      if (userData.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/');
