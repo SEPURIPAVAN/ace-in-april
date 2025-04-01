@@ -6,6 +6,48 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project-url.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
+// Create a proper mock client with chainable methods to prevent TypeScript errors
+const createMockClient = () => {
+  // Mock response for all database operations
+  const mockResponse = {
+    data: null,
+    error: { message: 'Supabase configuration error' }
+  };
+
+  // Create a chainable object that always returns itself for method calls
+  const createChainable = () => {
+    const chainable: any = {};
+    const methods = [
+      'select', 'insert', 'update', 'delete', 'eq', 'order', 'single', 'lte', 'gte', 'lt', 'gt',
+      'neq', 'like', 'ilike', 'is', 'in', 'contains', 'containedBy', 'range', 'overlaps',
+      'textSearch', 'filter', 'match', 'not'
+    ];
+
+    methods.forEach(method => {
+      chainable[method] = () => chainable;
+    });
+
+    // Final methods that end the chain should return the mock response
+    chainable.then = () => Promise.resolve(mockResponse);
+    chainable.single = () => mockResponse;
+
+    return chainable;
+  };
+
+  return {
+    from: () => createChainable(),
+    storage: {
+      from: () => ({
+        upload: () => Promise.resolve(mockResponse),
+        getPublicUrl: () => ({ data: { publicUrl: '' } }),
+      }),
+    },
+    functions: {
+      setAuth: () => {},
+    },
+  };
+};
+
 // Initialize the Supabase client with URL validation
 const createSupabaseClient = () => {
   try {
@@ -16,24 +58,7 @@ const createSupabaseClient = () => {
     console.error('Invalid Supabase URL:', error);
     // Return a mock client that doesn't make actual API calls
     // This prevents runtime errors while allowing the app to load
-    return {
-      from: () => ({
-        select: () => ({ data: null, error: { message: 'Supabase configuration error' } }),
-        insert: () => ({ data: null, error: { message: 'Supabase configuration error' } }),
-        update: () => ({ data: null, error: { message: 'Supabase configuration error' } }),
-        delete: () => ({ data: null, error: { message: 'Supabase configuration error' } }),
-        eq: () => ({ data: null, error: { message: 'Supabase configuration error' } }),
-      }),
-      storage: {
-        from: () => ({
-          upload: () => ({ data: null, error: { message: 'Supabase configuration error' } }),
-          getPublicUrl: () => ({ data: { publicUrl: '' } }),
-        }),
-      },
-      functions: {
-        setAuth: () => {},
-      },
-    };
+    return createMockClient();
   }
 };
 
@@ -63,4 +88,3 @@ export const addUserToRequest = () => {
 
 // Call this function to set up the custom header
 addUserToRequest();
-
