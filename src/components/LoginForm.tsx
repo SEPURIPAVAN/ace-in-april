@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ExclamationTriangleIcon } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 const LoginForm = () => {
   const [username, setUsername] = useState('');
@@ -51,7 +51,7 @@ const LoginForm = () => {
       <CardContent>
         {error && (
           <Alert variant="destructive" className="mb-4">
-            <ExclamationTriangleIcon className="h-4 w-4" />
+            <AlertTriangle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
