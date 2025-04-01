@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, LoginCredentials } from '@/types';
-import { supabase, addUserToRequest } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -35,15 +35,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (credentials: LoginCredentials): Promise<boolean> => {
     try {
-      // In a real-world app, you'd use Supabase Auth instead of this custom approach
+      console.log('Attempting login with:', credentials.username);
+      
+      // Properly query the users table
       const { data, error } = await supabase
         .from('users')
         .select('id, username, role, category')
         .eq('username', credentials.username)
-        .eq('password', credentials.password) // Note: Use hashed passwords in production
-        .single();
+        .eq('password', credentials.password); // Note: Use password hashing in production
 
-      if (error || !data) {
+      console.log('Login response:', { data, error });
+
+      if (error || !data || data.length === 0) {
         toast({
           title: 'Login failed',
           description: 'Invalid username or password',
@@ -52,18 +55,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      // Get the first user that matches (should be only one)
+      const userData = data[0];
+
       // Save user data to localStorage
-      localStorage.setItem('aceInApril_user', JSON.stringify(data));
-      setUser(data);
-      addUserToRequest(); // Update Supabase client with user ID
+      localStorage.setItem('aceInApril_user', JSON.stringify(userData));
+      setUser(userData);
 
       toast({
         title: 'Login successful',
-        description: `Welcome back, ${data.username}!`,
+        description: `Welcome back, ${userData.username}!`,
       });
 
       // Redirect based on role
-      if (data.role === 'admin') {
+      if (userData.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/');
