@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('Attempting login with:', credentials.username);
       
-      // First, let's get all users matching the username
+      // Properly query the users table
       const { data, error } = await supabase
         .from('users')
         .select('id, username, role, category')
