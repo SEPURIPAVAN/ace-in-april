@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // These values would typically come from environment variables
 // For now, we'll use placeholders that users will replace with their own values
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project-url.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://bkmjjkqggdfxjrbgngiq.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrbWpqa3FnZ2RmeGpyYmduZ2lxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM0OTc0NDUsImV4cCI6MjA1OTA3MzQ0NX0.8dn287JLzR9NePvuWkEREzKv3255DS6iIsTKVnNp2wA';
 
 // Create a proper mock client with chainable methods to prevent TypeScript errors
 const createMockClient = () => {
