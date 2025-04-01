@@ -37,8 +37,9 @@ const DailyQuestion: React.FC<DailyQuestionProps> = ({ category }) => {
         const { data, error } = await supabase
           .from('questions')
           .select('*')
-          .eq('date', today)
           .eq('category', category)
+          .order('date', { ascending: false })
+          .limit(1)
           .single();
 
         if (error) {

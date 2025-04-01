@@ -1,14 +1,18 @@
-
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import DailyQuestion from '@/components/DailyQuestion';
 import Navbar from '@/components/Navbar';
 
 const Home = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   if (!user) {
-    return null; // Auth provider will handle redirect
+    return <Navigate to="/login" replace />;
   }
 
   return (

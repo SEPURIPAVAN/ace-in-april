@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase, uploadFile, createSubmission } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -47,36 +46,31 @@ const SubmissionForm = () => {
       // File upload (if a file is selected)
       let fileUrl = null;
       if (file) {
-        const fileName = `${user.id}_${Date.now()}_${file.name}`;
-        const { data: fileData, error: fileError } = await supabase.storage
-          .from('submissions')
-          .upload(fileName, file);
+        try {
+          const fileName = `${user.id}_${Date.now()}_${file.name}`;
+          console.log('Attempting to upload file:', fileName);
           
-        if (fileError) {
-          throw new Error(`File upload failed: ${fileError.message}`);
+          const { url } = await uploadFile(file, fileName);
+          console.log('File uploaded successfully, URL:', url);
+          fileUrl = url;
+        } catch (uploadError) {
+          console.error('Upload error:', uploadError);
+          toast({
+            title: 'File upload failed',
+            description: uploadError instanceof Error ? uploadError.message : 'Failed to upload file',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
         }
-        
-        // Get public URL for the file
-        const { data: urlData } = supabase.storage
-          .from('submissions')
-          .getPublicUrl(fileName);
-          
-        fileUrl = urlData.publicUrl;
       }
       
-      // Create submission record
-      const { error: submissionError } = await supabase
-        .from('submissions')
-        .insert({
-          user_id: user.id,
-          date: today,
-          message: message,
-          file_url: fileUrl,
-        });
-        
-      if (submissionError) {
-        throw new Error(`Submission failed: ${submissionError.message}`);
-      }
+      // Create submission record using the new function
+      await createSubmission({
+        date: today,
+        message: message,
+        file_url: fileUrl,
+      });
       
       toast({
         title: 'Submission successful',
