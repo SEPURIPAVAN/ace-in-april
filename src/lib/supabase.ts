@@ -53,7 +53,19 @@ const createSupabaseClient = () => {
   try {
     // Validate the URL before creating the client
     new URL(supabaseUrl);
-    return createClient(supabaseUrl, supabaseAnonKey);
+    
+    // Create and configure the Supabase client
+    const client = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+      }
+    });
+    
+    // Debug log to verify connection
+    console.log('Supabase client initialized with URL:', supabaseUrl);
+    
+    return client;
   } catch (error) {
     console.error('Invalid Supabase URL:', error);
     // Return a mock client that doesn't make actual API calls

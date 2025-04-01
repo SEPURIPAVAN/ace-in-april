@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, LoginCredentials } from '@/types';
-import { supabase, addUserToRequest } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -35,13 +35,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (credentials: LoginCredentials): Promise<boolean> => {
     try {
-      // In a real-world app, you'd use Supabase Auth instead of this custom approach
+      console.log('Attempting login with:', credentials.username);
+      
+      // Query the users table directly
       const { data, error } = await supabase
         .from('users')
         .select('id, username, role, category')
         .eq('username', credentials.username)
-        .eq('password', credentials.password) // Note: Use hashed passwords in production
+        .eq('password', credentials.password) // Note: Use password hashing in production
         .single();
+
+      console.log('Login response:', { data, error });
 
       if (error || !data) {
         toast({
@@ -55,7 +59,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Save user data to localStorage
       localStorage.setItem('aceInApril_user', JSON.stringify(data));
       setUser(data);
-      addUserToRequest(); // Update Supabase client with user ID
 
       toast({
         title: 'Login successful',
