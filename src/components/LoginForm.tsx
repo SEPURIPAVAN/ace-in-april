@@ -52,7 +52,9 @@ const LoginForm = () => {
     setIsLoading(true);
     try {
       const success = await login({ username, password });
-      if (!success) {
+      if (success) {
+        navigate('/');
+      } else {
         setError({
           type: 'auth',
           message: 'Invalid username or password'

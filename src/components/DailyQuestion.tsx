@@ -34,6 +34,16 @@ const DailyQuestion: React.FC<DailyQuestionProps> = ({ category }) => {
         setLoading(true);
         setError(null);
 
+        // First check if we can connect to Supabase
+        const { data: testData, error: testError } = await supabase
+          .from('questions')
+          .select('count')
+          .limit(1);
+
+        if (testError) {
+          throw new Error(`Connection error: ${testError.message}`);
+        }
+
         const { data, error } = await supabase
           .from('questions')
           .select('*')
@@ -53,7 +63,7 @@ const DailyQuestion: React.FC<DailyQuestionProps> = ({ category }) => {
         console.error('Error fetching question:', error);
         if (isMounted) {
           if (error instanceof Error) {
-            if (error.message.includes('network')) {
+            if (error.message.includes('network') || error.message.includes('Connection error')) {
               setError({
                 type: 'network',
                 message: 'Network connection error. Please check your internet connection.'

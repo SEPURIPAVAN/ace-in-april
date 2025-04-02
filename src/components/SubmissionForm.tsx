@@ -10,7 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Upload } from 'lucide-react';
 
-const SubmissionForm = () => {
+interface SubmissionFormProps {
+  onSuccess?: () => void;
+}
+
+const SubmissionForm = ({ onSuccess }: SubmissionFormProps) => {
   const [message, setMessage] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +80,11 @@ const SubmissionForm = () => {
         title: 'Submission successful',
         description: 'Your solution has been submitted successfully.',
       });
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
       
       navigate('/');
     } catch (error) {

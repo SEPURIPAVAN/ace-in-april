@@ -38,82 +38,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setLoading(false);
   }, []);
 
-  const login = async (credentials: LoginCredentials): Promise<boolean> => {
+  const login = async (credentials: LoginCredentials) => {
     try {
-      console.log('Attempting login with:', credentials.username);
+      console.log('Attempting login with:', credentials);
       
-      // Query the users table with proper password hashing
-      const { data, error } = await supabase
+      // First, get the user by username
+      const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id, username, role, category, password, created_at')
+        .select('*')
         .eq('username', credentials.username)
         .single();
 
-      if (error) {
-        console.error('Supabase error:', error);
-        toast({
-          title: 'Login failed',
-          description: 'Database error occurred',
-          variant: 'destructive',
-        });
+      if (userError) {
+        console.log('User lookup error:', userError);
         return false;
       }
 
-      if (!data) {
-        toast({
-          title: 'Login failed',
-          description: 'User not found',
-          variant: 'destructive',
-        });
+      if (!userData) {
         return false;
       }
 
-      console.log('Found user:', { username: data.username, hasPassword: !!data.password });
-      
-      // Direct password comparison for demo
-      const isValidPassword = credentials.password === data.password;
-      console.log('Password verification:', { 
-        providedPassword: credentials.password,
-        storedPassword: data.password,
-        isValid: isValidPassword 
-      });
-
-      if (!isValidPassword) {
-        toast({
-          title: 'Login failed',
-          description: 'Invalid username or password',
-          variant: 'destructive',
-        });
+      // For demo purposes, use plain text password comparison
+      if (credentials.password !== userData.password) {
         return false;
       }
 
-      // Remove password from user data before storing
-      const { password, ...userData } = data;
-
-      // Save user data to localStorage
+      // Store user data in localStorage
       localStorage.setItem('aceInApril_user', JSON.stringify(userData));
       setUser(userData);
-
-      toast({
-        title: 'Login successful',
-        description: `Welcome back, ${userData.username}!`,
-      });
-
-      // Redirect based on role
-      if (userData.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
-
+      setLoading(false);
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      toast({
-        title: 'Login error',
-        description: 'An unexpected error occurred. Please try again later.',
-        variant: 'destructive',
-      });
+      setLoading(false);
       return false;
     }
   };
